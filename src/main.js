@@ -5,6 +5,9 @@ import store from './store'
 import vuetify from './plugins/vuetify';
 
 import '@mdi/font/css/materialdesignicons.css'
+import api from '@/api/api';
+
+Vue.prototype.api = api;
 
 Vue.config.productionTip = false
 

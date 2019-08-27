@@ -19,8 +19,6 @@
 </template>
 
 <script>
-import api from '@/api/api';
-
 export default {
 	data: () => ({
 		valid:true,
@@ -40,12 +38,12 @@ export default {
 			if(this.$refs.form.validate()) {
 				this.loading = true;
 				this.error = false;
-				api.post('api/login.php',{
+				this.api.post('api/login.php',{
 					login: this.login.value,
 					password: this.password.value
 				}).then(res=>{
 					// 	this.$store.dispatch("updateUserData",res.user);
-				// 	this.$router.push({name:"rooms"})
+					this.$router.push({name:"rooms"})
 				})
 				.catch(err=>{
 					this.error = true;

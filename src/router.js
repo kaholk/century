@@ -22,10 +22,10 @@ export default new Router({
 			name: 'help',
 			component: () => import('./views/Help.vue')
 		},
-		// {
-		// 	path: '/rooms',
-		// 	name: 'rooms',
-		// 	component: () => import('./views/Rooms.vue')
-		// }
+		{
+			path: '/rooms',
+			name: 'rooms',
+			component: () => import('./views/Rooms.vue')
+		}
 	]
 })

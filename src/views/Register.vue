@@ -57,75 +57,77 @@
 </template>
 
 <script>
+	export default {
+		data: () => ({
+			valid: true,
+			loading: false,
+			error: false,
+			success: false,
+			login: {
+				value: "",
+				rules: [
+					v => !!v || "Login jest wymagany",
+					v =>
+						(v && v.length >= 5) ||
+						"Login powinien mieć co najmniej 5 znaków",
+					v =>
+						(v && v.length <= 10) ||
+						"Login musi wynosic maksymalnie 10 znaków"
+				]
+			},
+			password: {
+				value: "",
+				rules: [
+					v => !!v || "Hasło jest wymagane",
+					v =>
+						(v && v.length >= 5) ||
+						"Hasło powinno mieć co najmniej  5 znakow"
+				]
+			},
+			passwordRepeat: {
+				value: "",
+				rules: [
+					v => !!v || "Musisz powtórzyć haslo",
+					v =>
+						(v && v === this.password.value) ||
+						"Hasła nie są identyczne"
+				]
+			},
+			email: {
+				value: "",
+				rules: [
+					v => !!v || "E-mail jest wymagany",
+					v =>
+						/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(v) ||
+						"Wprowadź poprawny adres E-mail"
+				]
+			}
+		}),
+		methods: {
+			validate() {
+				if (this.$refs.form.validate()) {
+					this.loading = true;
+					this.error = false;
+					this.success = false;
 
-
-export default {
-	data: () => ({
-		valid: true,
-		loading: false,
-		error: false,
-		success: false,
-		login:{
-			value: "",
-			rules: [
-				v => !!v || "Login jest wymagany",
-				v =>(v && v.length >= 5) ||
-					"Login powinien mieć co najmniej 5 znaków",
-				v =>
-					(v && v.length <= 10) ||
-					"Login musi wynosic maksymalnie 10 znaków"
-			]
-		},
-		password:{
-			value: "",
-			rules: [
-				v => !!v || "Hasło jest wymagane",
-				v =>
-					(v && v.length >= 5) ||
-					"Hasło powinno mieć co najmniej  5 znakow"
-			]
-		},
-		passwordRepeat:{
-			value: "",
-			rules: [
-				v => !!v || "Musisz powtórzyć haslo",
-				v =>
-					(v && v === this.password.value) || "Hasła nie są identyczne"
-			]
-		},
-		email:{
-			value: "",
-			rules: [
-				v => !!v || "E-mail jest wymagany",
-				v =>
-					/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(v) ||
-					"Wprowadź poprawny adres E-mail"
-			]
-		},
-  }),
-  methods:{
-	  	validate() {
-			if (this.$refs.form.validate()) {
-				this.loading = true;
-				this.error = false;
-				this.success = false;
-				// api.post<api.Response, api.Register>("api/register.php", {
-				// 	login: this.login.value,
-				// 	password: this.password.value,
-				// 	email: this.email.value
-				// })
-				// 	.then(res => {
-				// 		this.success = true;
-				// 	})
-				// 	.catch(err => {
-				// 		this.error = true;
-				// 		console.log(err.message);
-				// 	})
-				// 	.finally(() => {
-				// 		this.loading = false;
-				// 	});
+					this.api
+						.post("api/register.php", {
+							login: this.login.value,
+							password: this.password.value,
+							email: this.email.value
+						})
+						.then(res => {
+							this.success = true;
+						})
+						.catch(err => {
+							this.error = true;
+							console.log(err.message);
+						})
+						.finally(() => {
+							this.loading = false;
+						});
+				}
 			}
 		}
-  }
-};
+	};
 </script>
