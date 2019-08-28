@@ -32,7 +32,7 @@
 			></v-text-field>
 			<v-text-field
 				v-model="passwordRepeat.value"
-				:rules="passwordRepeat.rules"
+				:rules="passwordRepeatRules"
 				label="Powtorz Hasło"
 				type="password"
 				required
@@ -86,12 +86,6 @@
 			},
 			passwordRepeat: {
 				value: "",
-				rules: [
-					v => !!v || "Musisz powtórzyć haslo",
-					v =>
-						(v && v === this.password.value) ||
-						"Hasła nie są identyczne"
-				]
 			},
 			email: {
 				value: "",
@@ -103,6 +97,16 @@
 				]
 			}
 		}),
+		computed:{
+			passwordRepeatRules(){
+				return [
+					v => !!v || "Musisz powtórzyć haslo",
+					v =>
+						(v && v === this.password.value) ||
+						"Hasła nie są identyczne"
+				]
+			} 
+		},
 		methods: {
 			validate() {
 				if (this.$refs.form.validate()) {

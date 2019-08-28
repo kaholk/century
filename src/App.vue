@@ -22,7 +22,7 @@
 		<!-- Sizes your content based upon application components -->
 		<v-content>
 			<!-- Provides the application the proper gutter -->
-			<v-container fluid class="hhh" >
+			<v-container fluid class="hhh">
 				<!-- If using vue-router -->
 				<router-view></router-view>
 			</v-container>
@@ -57,26 +57,35 @@
 			color: $accent !important;
 		}
 	}
-	.hhh{
+	.hhh {
 		height: 100%;
 	}
 </style>
 
 <script>
-export default {
-  name: 'App',
-  data: () => ({
-    navigation: true,
-  }),
-  computed:{
-	  menu(){
-		  let items = [
-				{title: "Home", icon: "mdi-home", link:"/"},
-				{title: "Rejestracja", icon: "mdi-key", link:"/register"},
-				{title: "Jak grać?", icon: "mdi-dice-multiple", link:"/help"}
-			];
-			return items;
-	  }
-  }
-};
+	// import { mapState } from "vuex";
+
+	export default {
+		name: "App",
+		data: () => ({
+			navigation: true
+		}),
+		computed: {
+			// ...mapState(["login"]),
+			menu() {
+				let items = [
+					{ title: "Home", icon: "mdi-home", link: "/" },
+					{ title: "Rejestracja", icon: "mdi-key", link: "/register" },
+					{ title: "Jak grać?", icon: "mdi-dice-multiple", link: "/help" }
+				];
+				if (this.$store.state["userData"]['login'] !== "")
+					items = [
+						...items,
+						{ title: "Pokoje", icon: "mdi-door", link: "/rooms" }
+					];
+					
+				return items;
+			}
+		}
+	};
 </script>

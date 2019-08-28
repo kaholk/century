@@ -49,7 +49,7 @@ let post = async(url = "", data = {}) => {
 		throw new Error(res.error);
 	
 	/*zwroc dane*/
-	return res.data;
+	return res;
 }
 
 

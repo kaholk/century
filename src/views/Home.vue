@@ -19,6 +19,7 @@
 </template>
 
 <script>
+import { mapMutations } from 'vuex'
 export default {
 	data: () => ({
 		valid:true,
@@ -34,6 +35,9 @@ export default {
 		},
   }),
   methods:{
+	  	...mapMutations([
+			'updateUserData'
+		]),
 	  	validate() {
 			if(this.$refs.form.validate()) {
 				this.loading = true;
@@ -43,6 +47,7 @@ export default {
 					password: this.password.value
 				}).then(res=>{
 					// 	this.$store.dispatch("updateUserData",res.user);
+					this.updateUserData(res.user)
 					this.$router.push({name:"rooms"})
 				})
 				.catch(err=>{
@@ -52,7 +57,7 @@ export default {
 					this.loading = false;
 				})
 			}
-		}
+		},
   }
 };
 </script>
