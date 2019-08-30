@@ -63,9 +63,11 @@ Class User{
 	private $password;
 	private $email;
 	private $db;
+	private $sectator;
 
 	public function __construct(Database $db){
 		$this->db = $db;
+		$this->spectator = true;
 	}
 
 	public function getId(){
@@ -152,6 +154,14 @@ Class User{
 			return false;
 	}
 
+	/**
+	 * Rejestruje uzytkownika
+	 * 
+	 * Wymaga wywołania:
+	 *	- setLogin();
+	 *	- setPassword();
+	 *	- setEmail();
+	 */
 	public function register(){
 		if($this->checkLogin())
 			throw new Exception("such login already exists");
@@ -168,12 +178,86 @@ Class User{
 
 }
 
-// try{
-// 	$db = new Database();
-// 	$user = new User($db);
 
-// }catch(Exception $e){
-// 	echo $e->getMessage();
-// }
+Class Room{
+	private $id;
+	private $name;
+
+	private $tradeCards;
+	private $wealthCards;
+	private $users;
+
+	private $db;
+
+	public function __construct(Database $db){
+		$this->db = $db;
+		$this->users = [];
+	}
+
+	public function setId($id){
+		$this->id = $id;
+	}
+
+	public function createRoom(){
+
+		$this->wealthCards = $this->db->query('select','wealth_cards',['id','take_yellow','take_green','take_blue','take_red','points','src']);
+
+		$this->tradeCards = $this->db->query('select','trade_cards',[
+			'id',
+			'take_yellow','give_yellow',
+			'take_green','give_green',
+			'take_blue','give_blue',
+			'take_red','give_red',
+			'upgrade',
+			'src'
+		],['start'=>0]);
+
+		$this->db->query("insert","rooms",[
+			'name'=>'sobol',
+			'data'=>$this->packData()
+		]);
+	}
+
+	private function packData(){
+		return json_encode([
+			'wealthCards'=>$this->wealthCards,
+			'tradeCards'=>$this->tradeCards,
+			'users'=>$this->users
+		]);
+	}
+
+	private function unpackData($data){
+		$d = json_decode($data);
+		$this->wealthCards = $d->wealthCards;
+		$this->tradeCards = $d->tradeCards;
+		$this->users = $d->users;
+	}
+
+	public function load($id=null){
+		if($id)
+			$this->setId($id);
+
+		$data = $this->db->query("get","rooms",['id','name','data'],["id" => $this->id]);
+
+		$this->name = $data['name'];
+		$this->unpackData($data['data']);
+	}
+
+	public function update(){
+		$this->db->query("update","rooms",['data'=>packData()],["id" => $this->id]);
+	}
+}
+
+try{
+	$db = new Database();
+	// $user = new User($db);
+	$room = new Room($db);
+	// $room->createRoom();
+	// $room->setId();
+	$room->load(3);
+
+}catch(Exception $e){
+	echo $e->getMessage();
+}
 
 ?>
