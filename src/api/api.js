@@ -32,7 +32,6 @@ let post = async(url = "", data = {}) => {
 
 	/*utworzenie nagłówków, dodanie danych do wysłania*/
 	let requestInit = createRequestInit(data);
-	console.log(requestInit);
 
 	/*wysłanie danych i odebranie odpowiedzi*/
 	let response = await fetch(url,requestInit);

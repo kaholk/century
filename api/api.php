@@ -1,7 +1,20 @@
 <?php
+session_start();
 
 require_once 'vendor/autoload.php';
 use Medoo\Medoo;
+
+// function keySearch($array,$finds){
+// 	$arr = [];
+// 	foreach($finds as $find)
+// 	{
+// 		foreach ($array as $key => $value) {
+// 			if($key == $find)
+// 				$arr[$key] = $value;
+// 		}
+// 	}
+// 	return $arr;
+// }
 
 Class Database{
 	private $database;
@@ -63,7 +76,7 @@ Class User{
 	private $password;
 	private $email;
 	private $db;
-	private $sectator;
+	private $spectator;
 
 	public function __construct(Database $db){
 		$this->db = $db;
@@ -94,7 +107,7 @@ Class User{
 	 * Ustawia login
      * @throws exceptionclass Wyzuca blad jeśli login nie spełnia kryteriów
 	 */
-	public function setLogin($login){
+	private function setLogin($login){
 		
 		/*Poprawnosc loginu*/
 		if(!(
@@ -107,7 +120,7 @@ Class User{
 		$this->login = $login;
 	}
 
-	public function setPassword($password){
+	private function setPassword($password){
 		/*jesli haslo jest niezahashowane*/
 		if(password_get_info($password)['algo'] == 0)
 		{
@@ -124,7 +137,7 @@ Class User{
 			$this->password = $password;
 	}
 
-	public function setEmail($email){
+	private function setEmail($email){
 		/*Poprawność adresu email*/
 		if(!filter_var($email, FILTER_VALIDATE_EMAIL))
 			throw new Exception("Email rules error");
@@ -157,12 +170,12 @@ Class User{
 	/**
 	 * Rejestruje uzytkownika
 	 * 
-	 * Wymaga wywołania:
-	 *	- setLogin();
-	 *	- setPassword();
-	 *	- setEmail();
 	 */
-	public function register(){
+	public function register($login,$password,$email){
+		$this->setLogin($login);
+		$this->setPassword($password);
+		$this->setEmail($email);
+
 		if($this->checkLogin())
 			throw new Exception("such login already exists");
 
@@ -174,6 +187,26 @@ Class User{
 			"email" => $this->email,
 			"password" => $this->password
 		]);
+	}
+
+	public function login($login,$password){
+		$this->setLogin($login);
+		// $this->setPassword($password);
+
+		if(!$this->checkLogin())
+			throw new Exception("such login does not exists");
+
+		$data = $this->db->query("get","users",['id','email','password'],["login" => $this->login]);
+
+		if(!password_verify($password,$data['password']))
+			throw new Exception("wrong password");
+		
+		$_SESSION['id'] = $data['id'];
+
+		return [
+			'login'=>$login,
+			'email'=>$data['email']
+		];
 	}
 
 }
@@ -198,7 +231,7 @@ Class Room{
 		$this->id = $id;
 	}
 
-	public function createRoom(){
+	public function create(){
 
 		$this->wealthCards = $this->db->query('select','wealth_cards',['id','take_yellow','take_green','take_blue','take_red','points','src']);
 
@@ -248,16 +281,16 @@ Class Room{
 	}
 }
 
-try{
-	$db = new Database();
-	// $user = new User($db);
-	$room = new Room($db);
-	// $room->createRoom();
-	// $room->setId();
-	$room->load(3);
+// try{
+// 	$db = new Database();
+// 	// $user = new User($db);
+// 	$room = new Room($db);
+// 	// $room->create();
+// 	// $room->setId();
+// 	$room->load(3);
 
-}catch(Exception $e){
-	echo $e->getMessage();
-}
+// }catch(Exception $e){
+// 	echo $e->getMessage();
+// }
 
 ?>

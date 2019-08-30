@@ -20,13 +20,8 @@ try{
 	/*Utworznie uzytkownika*/
 	$user = new User($db);
 
-	/*Ustawienie danych*/
-	$user->setLogin($data->login);
-	$user->setPassword($data->password);
-	$user->setEmail($data->email);
-
 	/*Rejestracja*/
-	$user->register();
+	$user->register($data->login,$data->password,$data->email);
 }catch(Exception $e){
 	/*przechywcenie bledu*/
 	$error = $e->getMessage();
