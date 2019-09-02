@@ -71,132 +71,57 @@ Class Database{
 }
 
 Class User{
-	private $id;
-	private $login;
-	private $password;
-	private $email;
-	private $db;
-	private $spectator;
+	// private $id;
 
-	public function __construct(Database $db){
-		$this->db = $db;
-		$this->spectator = true;
-	}
+	// private $tradeCards;
 
-	public function getId(){
-		return $this->id;
-	}
+	// public function __construct($id){
 
-	public function getLogin(){
-		return $this->id;
-	}
+	// 	$this->id = $id;
+	// 	$this->spectator = true;
+	// }
 
-	public function getPassword(){
-		return $this->password;
-	}
-
-	public function getEmail(){
-		return $this->email;
-	}
-
-	public function setId($id){
-		$this->id = $id;
-	}
-
-	/**
-	 * Ustawia login
-     * @throws exceptionclass Wyzuca blad jeśli login nie spełnia kryteriów
-	 */
-	private function setLogin($login){
-		
-		/*Poprawnosc loginu*/
+	public static function register(Database $db,string $login,string $password,string $email){
+		/*Sprawdza login*/
 		if(!(
 			($login) &&
 			(strlen($login) >= 5) &&
 			(strlen($login) <= 10)
 		))throw new Exception("Login rules error");
 
-		/*ustaw login*/
-		$this->login = $login;
-	}
+		/*Sprawdza haslo*/
+		if(!(
+			($password) &&
+			(strlen($password) >= 5)
+		))throw new Exception("Password rules error");
+		$password =  password_hash($password,PASSWORD_DEFAULT);
 
-	private function setPassword($password){
-		/*jesli haslo jest niezahashowane*/
-		if(password_get_info($password)['algo'] == 0)
-		{
-			/*Sprawdz poprawnos hasla*/
-			if(!(
-				($password) &&
-				(strlen($password) >= 5)
-			))throw new Exception("Password rules error");
-
-			/*zahashuj haslo*/
-			$this->password = password_hash($password,PASSWORD_DEFAULT);
-		}
-		else
-			$this->password = $password;
-	}
-
-	private function setEmail($email){
-		/*Poprawność adresu email*/
+		/*Sprawdza email*/
 		if(!filter_var($email, FILTER_VALIDATE_EMAIL))
 			throw new Exception("Email rules error");
-		
-		/*Ustaw email */
-		$this->email = $email;
 
-	}
-
-	/**
-     * @return bool zwraca true jesli login isnieje w bazie
-	 */
-	public function checkLogin(){
-		if($this->db->query("get","users",['id'],["login" => $this->login]))
-			return true;
-		else
-			return false;
-	}
-
-	/**
-     * @return bool zwraca true jesli email isnieje w bazie
-	 */
-	public function checkEmail(){
-		if($this->db->query("get","users",['id'],["login" => $this->email]))
-			return true;
-		else
-			return false;
-	}
-
-	/**
-	 * Rejestruje uzytkownika
-	 * 
-	 */
-	public function register($login,$password,$email){
-		$this->setLogin($login);
-		$this->setPassword($password);
-		$this->setEmail($email);
-
-		if($this->checkLogin())
+		/**Czy istnieje login*/
+		if($db->query("get","users",['id'],["login" => $login]))
 			throw new Exception("such login already exists");
 
-		if($this->checkEmail())
+		/**Czy istnieje email*/
+		if($db->query("get","users",['id'],["email" => $email]))
 			throw new Exception("such email already exists");
 
-		$this->db->query("insert","users", [
+		/*Wstaw do bazy*/
+		$db->query("insert","users", [
 			"login" => $this->login,
 			"email" => $this->email,
 			"password" => $this->password
 		]);
 	}
 
-	public function login($login,$password){
-		$this->setLogin($login);
-		// $this->setPassword($password);
+	public static function login(Database $db,string $login,string $password){
+		/**Czy istnieje login*/
+		if($db->query("get","users",['id'],["login" => $login]))
+				throw new Exception("such login does not exists");
 
-		if(!$this->checkLogin())
-			throw new Exception("such login does not exists");
-
-		$data = $this->db->query("get","users",['id','email','password'],["login" => $this->login]);
+		$data = $db->query("get","users",['id','email','password'],["login" => $login]);
 
 		if(!password_verify($password,$data['password']))
 			throw new Exception("wrong password");
@@ -208,30 +133,29 @@ Class User{
 			'email'=>$data['email']
 		];
 	}
-
 }
 
 
 Class Room{
+	
 	private $id;
 	private $name;
 
 	private $tradeCards;
+	private $startTradeCards;
 	private $wealthCards;
 	private $users;
+	private $chat;
 
 	private $db;
 
 	public function __construct(Database $db){
 		$this->db = $db;
 		$this->users = [];
+		$this->chat = [];
 	}
 
-	public function setId($id){
-		$this->id = $id;
-	}
-
-	public function create(){
+	public function create($name){
 
 		$this->wealthCards = $this->db->query('select','wealth_cards',['id','take_yellow','take_green','take_blue','take_red','points','src']);
 
@@ -245,8 +169,24 @@ Class Room{
 			'src'
 		],['start'=>0]);
 
+		$this->startTradeCards = $this->db->query('select','trade_cards',[
+			'id',
+			'take_yellow','give_yellow',
+			'take_green','give_green',
+			'take_blue','give_blue',
+			'take_red','give_red',
+			'upgrade',
+			'src'
+		],['start[!]'=>0]);
+
+		$this->chat [] = [
+			'time'=>$this->time(),
+			'owner'=>'root',
+			'message'=>'Pokój został utworzony'
+		];
+
 		$this->db->query("insert","rooms",[
-			'name'=>'sobol',
+			'name'=>$name,
 			'data'=>$this->packData()
 		]);
 	}
@@ -255,7 +195,9 @@ Class Room{
 		return json_encode([
 			'wealthCards'=>$this->wealthCards,
 			'tradeCards'=>$this->tradeCards,
-			'users'=>$this->users
+			'startTradeCards'=>$this->startTradeCards,
+			'users'=>$this->users,
+			'chat'=>$this->chat,
 		]);
 	}
 
@@ -263,34 +205,123 @@ Class Room{
 		$d = json_decode($data);
 		$this->wealthCards = $d->wealthCards;
 		$this->tradeCards = $d->tradeCards;
-		$this->users = $d->users;
+		$this->startTradeCards = $d->startTradeCards;
+		$this->users = (array) $d->users;
+		$this->chat = (array) $d->chat;
 	}
 
-	public function load($id=null){
-		if($id)
-			$this->setId($id);
+	private function update(){
+		$this->db->query("update","rooms",['data'=>$this->packData()],["id" => $this->id]);
+	}
+	
+	public function load($id){
+		$this->id = $id;
 
 		$data = $this->db->query("get","rooms",['id','name','data'],["id" => $this->id]);
 
 		$this->name = $data['name'];
 		$this->unpackData($data['data']);
 	}
+	
+	private function exist($id):int{
+		foreach (($this->users) as $key => $value){
+			if($value->id == $id)
+				return $key;
+		}
+		return -1;
+	}
 
-	public function update(){
-		$this->db->query("update","rooms",['data'=>packData()],["id" => $this->id]);
+	private function time(){
+		$time = new DateTime('now',new DateTimeZone('UTC'));
+		return $time->format('Y-m-d H:i:s T');
+	}
+
+	public function joinRoom($id){
+		if($this->exist($id) == -1)
+		{
+			$this->users []= [
+				'id'=>$id,
+				'tradeCards'=> $this->startTradeCards,
+				'wealthCards'=>[],
+				'status'=>'spectator',
+				'time'=> $this->time(),
+			];
+
+			$this->chat [] = [
+				'time'=>$this->time(),
+				'owner'=>'room',
+				'message'=>"$id dołączył do pokoju"
+			];
+
+			$this->update();
+		}
+	}
+
+	public function leaveRoom($id){
+		if(($key = $this->exist($id))>-1)
+		{
+			unset($this->users[$key]);
+
+			$this->chat [] = [
+				'time'=>$this->time(),
+				'owner'=>'room',
+				'message'=>"$id odszdł z pokoju"
+			];
+
+			$this->update();
+		}
+	}
+
+	public function joinGame($id){
+		if(($key = $this->exist($id))>-1)
+		{
+			$this->users[$key]->status = 'player';
+			$this->users[$key]->time = $this->time();
+
+			$this->chat [] = [
+				'time'=>$this->time(),
+				'owner'=>'room',
+				'message'=>"$id dołączył do gry"
+			];
+
+			$this->update();
+		}
+	}
+
+	public function leaveGame($id){
+		if(($key = $this->exist($id))>-1)
+		{
+			$this->users[$key]->status = 'spectator';
+			$this->users[$key]->time = $this->time();
+
+			$this->chat [] = [
+				'time'=>$this->time(),
+				'owner'=>'room',
+				'message'=>"$id odszedł z gry"
+			];
+
+			$this->update();
+		}
 	}
 }
 
-// try{
-// 	$db = new Database();
-// 	// $user = new User($db);
-// 	$room = new Room($db);
-// 	// $room->create();
-// 	// $room->setId();
-// 	$room->load(3);
+try{
 
-// }catch(Exception $e){
-// 	echo $e->getMessage();
-// }
+	$db = new Database();
+	
+	// echo;
+	$room = new Room($db);
+	$room->load(8);
+
+	// $room->joinRoom(5);
+	// $room->leaveRoom(33);
+
+	// $room->joinGame(33);
+
+	// $room->create('pokoj');
+
+}catch(Exception $e){
+	echo $e->getMessage();
+}
 
 ?>
