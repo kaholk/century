@@ -147,11 +147,15 @@ Class Room{
 	private $users;
 	private $chat;
 
+	private $turn;
+
 	private $db;
 	public function __construct(Database $db,$opt=null){
 		$this->db = $db;
+
 		$this->users = [];
 		$this->chat = [];
+		$this->turn = 0;
 
 		if(is_string($opt))
 			$this->create($opt);
@@ -202,6 +206,7 @@ Class Room{
 			'startTradeCards'=>$this->startTradeCards,
 			'users'=>$this->users,
 			'chat'=>$this->chat,
+			'turn'=>$this->turn,
 		]);
 	}
 
@@ -212,6 +217,7 @@ Class Room{
 		$this->startTradeCards = $d->startTradeCards;
 		$this->users = (array) $d->users;
 		$this->chat = (array) $d->chat;
+		$this->turn = $d->turn;
 	}
 
 	private function update(){
@@ -246,15 +252,23 @@ Class Room{
 			$this->users []= [
 				'id'=>$id,
 				'tradeCards'=> $this->startTradeCards,
+				'usedTradeCards'=>[],
 				'wealthCards'=>[],
 				'status'=>'spectator',
+				'money'=>[
+					'yellow'=>0,
+					'green'=>0,
+					'blue'=>0,
+					'red'=>0
+				],
 				'time'=> $this->time(),
 			];
 
 			$this->chat [] = [
 				'time'=>$this->time(),
 				'owner'=>'room',
-				'message'=>"$id dołączył do pokoju"
+				'user'=>$id,
+				'message'=>":name: dołączył do pokoju"
 			];
 
 			$this->update();
@@ -269,7 +283,8 @@ Class Room{
 			$this->chat [] = [
 				'time'=>$this->time(),
 				'owner'=>'room',
-				'message'=>"$id odszdł z pokoju"
+				'user'=>$id,
+				'message'=>":name: odszdł z pokoju"
 			];
 
 			$this->update();
@@ -282,10 +297,21 @@ Class Room{
 			$this->users[$key]->status = 'player';
 			$this->users[$key]->time = $this->time();
 
+			// count($this->users)
+			/*
+			Mechanizm rozdawania diamentów startowych
+				Pierwszy gracz otrzymuje 3 żółte kostki.
+				Drugi gracz otrzymuje 4 żółte kostki.
+				Trzeci gracz otrzymuje 4 żółte kostki.
+				Czwarty gracz otrzymuje 3 żółte i jedną czerwoną kostkę.
+				Piąty gracz otrzymuje 3 żółte i jedną czerwoną kostkę.
+			*/
+
 			$this->chat [] = [
 				'time'=>$this->time(),
 				'owner'=>'room',
-				'message'=>"$id dołączył do gry"
+				'user'=>$id,
+				'message'=>":name: dołączył do gry"
 			];
 
 			$this->update();
@@ -301,10 +327,40 @@ Class Room{
 			$this->chat [] = [
 				'time'=>$this->time(),
 				'owner'=>'room',
-				'message'=>"$id odszedł z gry"
+				'user'=>$id,
+				'message'=>":name: odszedł z gry"
 			];
 
 			$this->update();
+		}
+	}
+
+	public function takeCard($playerId,$type,$cardId){
+		if(($playerIndex = $this->exist($playerId))>-1){
+			if($type == 'wealth'){
+
+				$wealthCardsIndex = array_search($cardId, array_column($this->wealthCards, 'id'));
+				$card = array_splice($this->wealthCards,$wealthCardsIndex,1)[0];
+				/* 
+					mechanizm pobierania diamentow
+				*/
+				$this->users[$playerIndex]->wealthCards []= $card;
+				$this->update();
+			}
+			else if($type == 'trade'){
+				$tradeCardsIndex = array_search($cardId, array_column($this->tradeCards, 'id'));
+				$card = array_splice($this->wealthCards,$tradeCardsIndex,1)[0];
+				/* 
+					$card->yellow
+					$card->green
+					$card->blue
+					$card->red
+					mechanizm pobierania diamentow
+				*/
+
+				$this->users[$playerIndex]->tradeCards []= $card;
+				$this->update();
+			}
 		}
 	}
 }
@@ -313,15 +369,16 @@ try{
 
 	$db = new Database();
 
-	// $room = new Room($db,'pokój');
-	$room = new Room($db,8);
+	// $room = new Room($db,'xd tak');
+	$room = new Room($db,9);
 
-	// $room->joinRoom(5);
-	// $room->leaveRoom(33);
+	// $room->joinRoom(15);
+	// $room->leaveRoom(6);
 
-	// $room->joinGame(33);
+	// $room->joinGame(5);
 	// $room->leaveGame(33);
 
+	// $room->takeCard(5,'wealth',8);
 
 }catch(Exception $e){
 	echo $e->getMessage();
