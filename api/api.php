@@ -148,11 +148,15 @@ Class Room{
 	private $chat;
 
 	private $db;
-
-	public function __construct(Database $db){
+	public function __construct(Database $db,$opt=null){
 		$this->db = $db;
 		$this->users = [];
 		$this->chat = [];
+
+		if(is_string($opt))
+			$this->create($opt);
+		else if(is_numeric($opt))
+			$this->load($opt);
 	}
 
 	public function create($name){
@@ -308,17 +312,16 @@ Class Room{
 try{
 
 	$db = new Database();
-	
-	// echo;
-	$room = new Room($db);
-	$room->load(8);
+
+	// $room = new Room($db,'pokój');
+	$room = new Room($db,8);
 
 	// $room->joinRoom(5);
 	// $room->leaveRoom(33);
 
 	// $room->joinGame(33);
+	// $room->leaveGame(33);
 
-	// $room->create('pokoj');
 
 }catch(Exception $e){
 	echo $e->getMessage();
