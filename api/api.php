@@ -137,25 +137,26 @@ Class User{
 
 
 Class Room{
+	private $db;
 	
 	private $id;
 	private $name;
+	private $status;
 
 	private $tradeCards;
 	private $startTradeCards;
 	private $wealthCards;
 	private $users;
 	private $chat;
-
 	private $turn;
 
-	private $db;
 	public function __construct(Database $db,$opt=null){
 		$this->db = $db;
 
 		$this->users = [];
 		$this->chat = [];
 		$this->turn = 0;
+		$this->status = 'join';
 
 		if(is_string($opt))
 			$this->create($opt);
@@ -221,15 +222,21 @@ Class Room{
 	}
 
 	private function update(){
-		$this->db->query("update","rooms",['data'=>$this->packData()],["id" => $this->id]);
+		$this->db->query("update","rooms",[
+			'status'=>$this->status,
+			'data'=>$this->packData()
+		],[
+			"id" => $this->id
+		]);
 	}
 	
 	public function load($id){
 		$this->id = $id;
 
-		$data = $this->db->query("get","rooms",['id','name','data'],["id" => $this->id]);
+		$data = $this->db->query("get","rooms",['id','name','status','data'],["id" => $this->id]);
 
 		$this->name = $data['name'];
+		$this->status = $data['status'];
 		$this->unpackData($data['data']);
 	}
 	
@@ -291,13 +298,12 @@ Class Room{
 		}
 	}
 
-	public function joinGame($id){
-		if(($key = $this->exist($id))>-1)
+	public function joinGame($userId){
+		if(($userIndex = $this->exist($userId))>-1)
 		{
-			$this->users[$key]->status = 'player';
-			$this->users[$key]->time = $this->time();
+			$this->users[$userIndex]->status = 'player';
+			$this->users[$userIndex]->time = $this->time();
 
-			// count($this->users)
 			/*
 			Mechanizm rozdawania diamentów startowych
 				Pierwszy gracz otrzymuje 3 żółte kostki.
@@ -310,7 +316,7 @@ Class Room{
 			$this->chat [] = [
 				'time'=>$this->time(),
 				'owner'=>'room',
-				'user'=>$id,
+				'user'=>$userId,
 				'message'=>":name: dołączył do gry"
 			];
 
@@ -363,6 +369,62 @@ Class Room{
 			}
 		}
 	}
+
+	public function response($userId){
+
+		$players = [];
+		$you = [];
+		$res = [];
+
+		foreach ($this->users as $key => $value) {
+			if($this->status == 'join')
+			{
+				$youIndex = -1;
+				if($value->id == $userId)
+					$youIndex = $key;
+				
+				$players []=[
+					'id'=>$value->id,
+					'time'=>$value->time,
+					'status'=>$value->status,
+				];
+
+				if($youIndex>-1)
+					$you = array_splice($players,$youIndex,1)[0];
+				
+				$res = [
+					'chat'=>$this->chat,
+					'you'=>$you,
+					'players'=>$players,
+				];
+			}
+			else if($this->status == 'game'){
+				if($value->id == $userId)
+				{
+					$you = $value;
+				}
+				else{
+					$players []= [
+						'id'=>$value->id,
+						'tradeCards'=>count($value->tradeCards),
+						'wealthCards'=>count($value->wealthCards),
+						'status'=>$value->status,
+						'money'=>$value->money,
+						'time'=>$value->time,
+					];
+				}
+				$res = [
+					'chat'=>$this->chat,
+					'you'=>$you,
+					'players'=>$players,
+					'turn'=>$this->turn,
+				];
+			}
+		}
+
+
+		echo json_encode($res);
+	}
 }
 
 try{
@@ -370,12 +432,13 @@ try{
 	$db = new Database();
 
 	// $room = new Room($db,'xd tak');
-	$room = new Room($db,9);
+	$room = new Room($db,10);
 
-	// $room->joinRoom(15);
+	// $room->joinGame(15);
+	$room->response(15);
 	// $room->leaveRoom(6);
-
-	// $room->joinGame(5);
+	
+	// $room->joinRoom(58);
 	// $room->leaveGame(33);
 
 	// $room->takeCard(5,'wealth',8);
